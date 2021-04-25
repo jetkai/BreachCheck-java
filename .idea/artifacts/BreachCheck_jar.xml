@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="BreachCheck:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/BreachCheck_jar</output-path>
+    <root id="archive" name="BreachCheck.jar">
+      <element id="module-output" name="BreachCheck" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/commons-codec-1.15.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
