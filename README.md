@@ -36,16 +36,24 @@ https://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&hash=403926033
 //SHA-256
 https://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&hash=ed8779a2222dc578f2cffbf308411b41381a94ef25801f9dfbe04746ea0944cd
 
+//SHA-512
+https://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&hash=0e2d148eff53f3b82ee3aa6f62c9ef8e3ceeddff865a733c294db55023b121e81f5ffdde83dc07e274c7389d1e1e430c20d582889a6399c32811fff47f260be6
+
 //PLAIN-TEXT
 https://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&password=123123
 ```
 Return Data Example:
 ```
-	{
-		"token":"39439e74fa27c09a4",
-		"hash":"cbfdac6008f9cab4083784cbd1874f76618d2a97",
-		"databaseBreach":"Stoned 2021 ~800K Unique Passwords (15+ RSPS Databases)",
-		"hashType":"SHA-1",
-		"breached":true
-	}
+{
+	"token": "39439e74fa27c09a4",
+	"hash": "ed8779a2222dc578f2cffbf308411b41381a94ef25801f9dfbe04746ea0944cd",
+	"hashPos": 2,
+	"severity": "Top 100 Common Passwords",
+	"databaseBreach": "Stoned 2021 ~800K Unique Passwords (15+ RSPS Databases)",
+	"hashType": "SHA-256",
+	"breached": true
+}
 ```
+— Data is sorted by most commonly used passwords, then hashed
+— Returns hashPos (the line number of the password/hash)
+— Returns severity (top X most common passwords)
