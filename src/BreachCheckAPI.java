@@ -4,20 +4,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 
 /**
  * @author jet kai
  * @version 4_24042021 - JDK 1.8
  */
-
 public class BreachCheckAPI {
 
     private String password = ""; //CHANGE ME
-    private String hashType = "SHA-1"; //MD5, SHA-1, SHA-256 & PLAIN-TEXT
+    private String hashType = "SHA-1"; //MD5, SHA-1, SHA-256, SHA-512 & PLAIN-TEXT
+    private boolean usingHttps = true; //true = HTTPS, false = HTTP
 
-    private final String apiUrl = "http://api.rsps.tools/jetkai/breachcheck"; //DO NOT CHANGE
+    private final String apiUrl = "api.rsps.tools/jetkai/breachcheck"; //DO NOT CHANGE
     private final String token = "39439e74fa27c09a4"; //DO NOT CHANGE
 
     private String returnedJson = ""; //Data that is returned from the api
@@ -29,12 +29,12 @@ public class BreachCheckAPI {
     public static void main(String[] args) {
         BreachCheckAPI bca = new BreachCheckAPI();
 
-        if(args.length == 1)
+        if(args.length > 0)
             bca.setPassword(args[0]);
-        else if(args.length == 2) {
-            bca.setPassword(args[0]);
+        if(args.length > 1)
             bca.setHashType(args[1]);
-        }
+        if(args.length > 2)
+            bca.setUsingHttps(Boolean.parseBoolean(args[2]));
 
         bca.initExample();
     }
@@ -48,22 +48,21 @@ public class BreachCheckAPI {
      * bca.setHashType("SHA-256");
      * boolean breached = isBreached();
      */
-
     public void initExample() {
         String checkField = checkFields();
         if (checkField.length() > 0) { //Checks if password or token field is empty
             System.err.println(checkField);
             return;
         }
-        //setPassword("password123"); <-- You can set from another class, before calling isBreached()
-        //setHashType("SHA-1"); <-- You can set from another class, before calling isBreached()
+        //setPassword("password123");   <-- You can set from another class, before calling isBreached()
+        //setHashType("SHA-1");         <-- You can set from another class, before calling isBreached()
+        //setUsingHttps(false);         <-- You can set from another class, before calling isBreached()
         boolean isBreached = isBreached();
         boolean hasReturnedJson = getReturnedJson().length() > 0;
-        if(isBreached && hasReturnedJson) {
+        if(isBreached && hasReturnedJson)
             System.err.println("You have been breached : " + getReturnedJson()); //Outputs JSON to console
-        } else if(!isBreached && hasReturnedJson) {
+        else if(!isBreached && hasReturnedJson)
             System.out.println("You have not been breached : " + getReturnedJson()); //Outputs JSON to console
-        }
     }
 
     /**
@@ -71,7 +70,7 @@ public class BreachCheckAPI {
      * @return The data from HTTP Request and checks if it contains "breached":true
      */
     public boolean isBreached() {
-        connect(); //HTTP Request - NOT HTTPS
+        connect();
         return getReturnedJson().contains("\"breached\":true"); //Extremely basic check, use JSON Parser if needed
     }
 
@@ -79,7 +78,7 @@ public class BreachCheckAPI {
      * Sends HTTP Request to the API, setting the returnedJson string with returned JSON data
      *
      * URL Request Example:
-     * http://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&hash=cbfdac6008f9cab4083784cbd1874f76618d2a97
+     * https://api.rsps.tools/jetkai/breachcheck?token=39439e74fa27c09a4&hash=cbfdac6008f9cab4083784cbd1874f76618d2a97
      *
      * Returned JSON Data Example:
      * {
@@ -90,14 +89,15 @@ public class BreachCheckAPI {
      *    "breached":true
      * }
      */
-
     public void connect() {
         try {
-            URL url = new URL(getApiUrl() +
+            URL url = new URL(
+                    (isUsingHttps() ? "https://" : "http://") +
+                    getApiUrl() +
                     "?token=" + getToken() +
                     "&" + getHashOrPassword() + "=" + getHashedPassword());
 
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            URLConnection con = url.openConnection();
             con.setConnectTimeout(3000);
             con.setReadTimeout(3000);
             con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:63.0) Gecko/20100101 Firefox/63.0");
@@ -127,6 +127,8 @@ public class BreachCheckAPI {
                 return DigestUtils.sha1Hex(getPassword());
             case "SHA-256":
                 return DigestUtils.sha256Hex(getPassword());
+            case "SHA-512":
+                return DigestUtils.sha512Hex(getPassword());
         }
         return getPassword(); //PLAIN-TEXT
     }
@@ -136,10 +138,10 @@ public class BreachCheckAPI {
      * @return Either "hash" or "password", depending if the password is plain-text or hexed
      */
     private String getHashOrPassword() {
-        String[] hashTypes = new String[]{"MD5", "SHA-1", "SHA-256"};
+        String[] hashTypes = new String[]{"MD5", "SHA-1", "SHA-256", "SHA-512"};
         for(String hashType : hashTypes) {
             if(hashType.equalsIgnoreCase(getHashType()))
-                return "hash"; //Used for MD5, SHA-1 & SHA-256
+                return "hash"; //Used for MD5, SHA-1, SHA-256 & SHA-512
         }
         return "password"; //Used for PLAIN-TEXT
     }
@@ -166,8 +168,8 @@ public class BreachCheckAPI {
 
     /**
      * Sets the hashType that is needed for the HTTP Request to either request:
-     * /breachcheck?hash= (for MD5, SHA-1 & SHA-256) or /breachcheck?password= (for plain-text)
-     * @param hashType - MD5, SHA-1, SHA-256, PLAIN-TEXT
+     * /breachcheck?hash= (for MD5, SHA-1, SHA-256 & SHA-512) or /breachcheck?password= (for plain-text)
+     * @param hashType - MD5, SHA-1, SHA-256, SHA-512 PLAIN-TEXT
      */
     public void setHashType(String hashType) {
         this.hashType = hashType;
@@ -177,16 +179,22 @@ public class BreachCheckAPI {
      * Sets the returnedJson string, used in connect() - BufferReader
      * @param returnedJson - Expecting a JSON string, will return black if failed to gather data
      */
-
     public void setReturnedJson(String returnedJson) {
         this.returnedJson = returnedJson;
+    }
+
+    /**
+     * Sets usingHttps, used in connect() - Establish connection
+     * @param usingHttps - Set as true or false, depending if you want to establish a https:// (as true) or http:// (as false) protocol
+     */
+    public void setUsingHttps(boolean usingHttps) {
+        this.usingHttps = usingHttps;
     }
 
     /**
      * Gets the password as string
      * @return The hash or password
      */
-
     public String getPassword() {
         return password;
     }
@@ -195,25 +203,22 @@ public class BreachCheckAPI {
      * Gets the token as string
      * @return The token used for the API request
      */
-
     public String getToken() {
         return token;
     }
 
     /**
      * Gets the API Url as string
-     * @return The URL before params are added - http://api.rsps.tools/jetkai/breachcheck
+     * @return The URL before params are added - https://api.rsps.tools/jetkai/breachcheck
      */
-
     public String getApiUrl() {
         return apiUrl;
     }
 
     /**
      * Gets the hashType as string
-     * @return MD5, SHA-1, SHA-256 or PLAIN-TEXT - depending on the data inside getPassword()
+     * @return MD5, SHA-1, SHA-256, SHA-512 or PLAIN-TEXT - depending on the data inside getPassword()
      */
-
     public String getHashType() {
         return hashType;
     }
@@ -222,8 +227,15 @@ public class BreachCheckAPI {
      * Gets the returnedJson as a string, used in isBreached()
      * @return The data that was obtained from connect()
      */
-
     public String getReturnedJson() {
         return returnedJson;
+    }
+
+    /**
+     * Gets the usingHttps as a boolean
+     * @return true or false, depending if the user wants to use HTTPS for connect();
+     */
+    public boolean isUsingHttps() {
+        return usingHttps;
     }
 }
